@@ -12,12 +12,13 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', 
   const [isVisible, setIsVisible] = useState(false);
   const [style, setStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const calculatePosition = () => {
     if (!triggerRef.current) return;
     
     const rect = triggerRef.current.getBoundingClientRect();
-    const gap = 10; // slightly larger gap
+    const gap = 12; 
     
     const newStyle: React.CSSProperties = { position: 'fixed', zIndex: 9999 };
 
@@ -48,18 +49,34 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', 
   };
 
   const onEnter = () => {
-    calculatePosition();
-    setIsVisible(true);
+    // Add delay to prevent accidental showing during quick movements/clicks
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      calculatePosition();
+      setIsVisible(true);
+    }, 400); // 400ms delay
+  };
+
+  const onLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsVisible(false);
+  };
+
+  // Immediate hide on interaction
+  const onInteraction = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsVisible(false);
   };
 
   useEffect(() => {
     if(isVisible) {
-        window.addEventListener('scroll', calculatePosition);
+        window.addEventListener('scroll', calculatePosition, true);
         window.addEventListener('resize', calculatePosition);
     }
     return () => {
-        window.removeEventListener('scroll', calculatePosition);
+        window.removeEventListener('scroll', calculatePosition, true);
         window.removeEventListener('resize', calculatePosition);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }
   }, [isVisible]);
 
@@ -69,26 +86,27 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, position = 'top', 
         ref={triggerRef}
         className={`inline-block ${className}`}
         onMouseEnter={onEnter}
-        onMouseLeave={() => setIsVisible(false)}
+        onMouseLeave={onLeave}
+        onMouseDown={onInteraction} // Clear immediately on mouse down
+        onClick={onInteraction}
       >
         {children}
       </div>
       {isVisible && createPortal(
         <div 
-          className="pointer-events-none transition-all duration-200 ease-out"
+          className="pointer-events-none transition-all duration-200 ease-out z-[9999]"
           style={style}
         >
-          {/* We wrap the content in a div that handles the "Entry" animation state */}
-          <div className="animate-in fade-in zoom-in-90 duration-150">
-             <div className="bg-gray-800 text-white text-xs py-1.5 px-3 rounded shadow-xl relative font-medium tracking-wide">
+          <div className="animate-in fade-in zoom-in-95 duration-200">
+             <div className="bg-slate-800/95 backdrop-blur-md text-white text-xs py-2 px-3 rounded-lg shadow-xl border border-slate-700/50 relative font-medium tracking-wide max-w-[200px] text-center leading-relaxed">
                 {content}
                 {/* Arrow */}
                 <div 
-                  className={`absolute w-2 h-2 bg-gray-800 rotate-45
-                    ${position === 'top' ? 'bottom-[-4px] left-1/2 -translate-x-1/2' : ''}
-                    ${position === 'bottom' ? 'top-[-4px] left-1/2 -translate-x-1/2' : ''}
-                    ${position === 'left' ? 'right-[-4px] top-1/2 -translate-y-1/2' : ''}
-                    ${position === 'right' ? 'left-[-4px] top-1/2 -translate-y-1/2' : ''}
+                  className={`absolute w-2 h-2 bg-slate-800/95 rotate-45 border-slate-700/50
+                    ${position === 'top' ? 'bottom-[-5px] left-1/2 -translate-x-1/2 border-b border-r' : ''}
+                    ${position === 'bottom' ? 'top-[-5px] left-1/2 -translate-x-1/2 border-t border-l' : ''}
+                    ${position === 'left' ? 'right-[-5px] top-1/2 -translate-y-1/2 border-t border-r' : ''}
+                    ${position === 'right' ? 'left-[-5px] top-1/2 -translate-y-1/2 border-b border-l' : ''}
                   `}
                 />
              </div>

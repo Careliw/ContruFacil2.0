@@ -34,26 +34,17 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if click is inside the trigger
       if (containerRef.current && containerRef.current.contains(event.target as Node)) {
         return;
       }
-      // Since the dropdown is in a portal, we can't easily check with 'contains' on a ref inside the portal 
-      // without complex ref forwarding or searching the DOM.
-      // However, usually portals block propagation or we handle it via a backdrop. 
-      // Simplest way for portal click-outside is to listen on window and close if not targetting the menu.
-      
-      // But here, we just close it if it's open and the click wasn't on the trigger.
-      // We will handle the "click inside menu" separately by stopping propagation or just letting selection close it.
       setIsOpen(false);
     };
 
     if (isOpen) {
       window.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', updatePosition, true); // true for capture to catch table scrolls
+      window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
     }
     
@@ -72,7 +63,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   const handleSelect = (option: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent closing immediately from click-outside logic if needed
+    e.stopPropagation(); 
     onChange(option);
     setIsOpen(false);
   };
@@ -95,53 +86,53 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         onClick={toggleOpen}
         onKeyDown={handleKeyDown}
         className={`
-          w-full px-3 py-2 bg-white border rounded text-sm cursor-pointer
-          flex justify-between items-center transition-all duration-200
-          outline-none
+          w-full px-3 py-2.5 bg-white border rounded-lg text-sm cursor-pointer
+          flex justify-between items-center transition-all duration-300
+          outline-none shadow-sm group
           ${isOpen 
-            ? 'border-green-500 ring-1 ring-green-500 shadow-md' 
-            : 'border-gray-200 hover:border-gray-300'
+            ? 'border-green-500 ring-2 ring-green-500/20 shadow-lg shadow-green-100' 
+            : 'border-gray-200 hover:border-green-400 hover:shadow-md'
           }
         `}
       >
-        <span className={`truncate ${!value ? 'text-gray-400' : 'text-gray-600'}`}>
+        <span className={`truncate font-medium transition-colors ${!value ? 'text-gray-400' : 'text-gray-700 group-hover:text-gray-900'}`}>
           {value || placeholder}
         </span>
         <ChevronDown 
           size={16} 
-          className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-green-500' : ''}`} 
+          className={`text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180 text-green-500' : 'group-hover:text-green-500'}`} 
         />
       </div>
 
-      {/* Dropdown Menu Portal */}
+      {/* Dropdown Menu Portal - z-index increased to 10000 to beat tooltips */}
       {isOpen && createPortal(
         <div 
-          className="fixed z-[9999] bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 origin-top"
+          className="fixed z-[10000] bg-white border border-gray-100 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top"
           style={{
-            top: coords.top + 4, // Add a little gap
+            top: coords.top + 8,
             left: coords.left,
             width: coords.width,
-            maxHeight: '240px',
+            maxHeight: '260px',
             overflowY: 'auto'
           }}
-          onMouseDown={(e) => e.stopPropagation()} // Stop propagation so click-outside doesn't fire immediately
+          onMouseDown={(e) => e.stopPropagation()} 
         >
-          <ul className="py-1">
+          <ul className="p-1.5 space-y-0.5">
             {options.map((option) => (
               <li
                 key={option}
                 onClick={(e) => handleSelect(option, e)}
                 className={`
-                  px-3 py-2 text-sm cursor-pointer flex items-center justify-between
-                  transition-colors duration-150
+                  px-3 py-2.5 text-sm cursor-pointer flex items-center justify-between
+                  transition-all duration-200 rounded-lg relative overflow-hidden
                   ${value === option 
-                    ? 'bg-green-50 text-green-700 font-medium' 
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-green-50 text-green-700 font-bold' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:pl-4'
                   }
                 `}
               >
                 {option}
-                {value === option && <Check size={14} className="text-green-600" />}
+                {value === option && <Check size={16} className="text-green-600 animate-in fade-in zoom-in duration-300" />}
               </li>
             ))}
           </ul>

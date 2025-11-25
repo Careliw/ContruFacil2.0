@@ -1,0 +1,5 @@
+{
+  "name": "ConstruFacil",
+  "description": "Calculadora de averbações de construção e acréscimos baseada no CUB (Custo Unitário Básico).",
+  "requestFramePermissions": []
+}
